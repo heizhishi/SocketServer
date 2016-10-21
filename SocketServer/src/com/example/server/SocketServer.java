@@ -7,49 +7,103 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class SocketServer {
+	/**
+	 * BufferedWriter bufferedWriter; BufferedReader bufferedReader;
+	 * 
+	 * ä¸èƒ½è®¾ç½®ä¸ºå…¨å±€å˜é‡å¦åˆ™ä¸ç„¶æ–°çš„ socket ä¼šæ›¿æ¢æ‰æ—§çš„ socket çš„ writer å’Œ readerã€‚
+	 * 
+	 */
 
 	public static void main(String[] args) {
 		SocketServer socketServer = new SocketServer();
 		socketServer.startServer();
-		
+
 	}
 
 	public void startServer() {
 		ServerSocket serverSocket = null;
-		BufferedReader bufferedReader = null;
 		Socket socket = null;
-		BufferedWriter bufferedWriter = null;
-		String receivedMsg;
 		try {
 			serverSocket = new ServerSocket(9898);
-			socket = serverSocket.accept();
-			System.out.println("client_" + socket.hashCode() + ":has connected");
-			bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-			bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-			while ((receivedMsg = bufferedReader.readLine()) != null) {
-				System.out.println(receivedMsg);
-				
-				/**
-				 * Ò»¶¨Òª¼ÓÉÏ»»ĞĞ·û¡°\n¡±·ñÔòreadline»áÒ»Ö±ÔÚ¶ÁÈ¡¶øÎŞ·¨Í£Ö¹£¬×îÖÕ¶Á²»³öÈÎºÎÊı¾İ
-				 */
-				bufferedWriter.write("server reply:" + receivedMsg+"\n");
-				
-				bufferedWriter.flush();
+
+			while (true) {
+
+				socket = serverSocket.accept();
+
+				manageConnection(socket);
 			}
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
 			try {
-				serverSocket.close();
-				bufferedWriter.close();
-				bufferedReader.close();
-				socket.close();
+				if (serverSocket != null) {
+					serverSocket.close();
+				}
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
 	}
 
+	public void manageConnection(Socket socket) {
+		new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				BufferedReader bufferedReader = null;
+				BufferedWriter bufferedWriter = null;
+				try {
+					System.out.println("client_" + socket.hashCode() + ":has connected");
+					bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+					bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+					String receivedMsg;
+					/*
+					 * new Timer().schedule(new TimerTask(){
+					 * 
+					 * @Override public void run() { try { System.out.println(
+					 * "heart beat onceâ€¦â€¦"); bufferedWriter.write(
+					 * "heart beat onceâ€¦â€¦"+"\n"); bufferedWriter.flush(); }
+					 * catch (IOException e) { e.printStackTrace(); } }
+					 * },3000,3000);
+					 */
+
+					while ((receivedMsg = bufferedReader.readLine()) != null) {
+						System.out.println("socketClientå®¢æˆ·ç«¯_" + socket.hashCode() + ":" + receivedMsg);
+
+						/**
+						 * ä¸€å®šè¦åŠ ä¸Šæ¢è¡Œç¬¦â€œ\nâ€å¦åˆ™readlineä¼šä¸€ç›´åœ¨è¯»å–è€Œæ— æ³•åœæ­¢ï¼Œæœ€ç»ˆè¯»ä¸å‡ºä»»ä½•æ•°æ®
+						 */
+
+						bufferedWriter.write("server reply:" + receivedMsg + "\n");
+						bufferedWriter.flush();
+					}
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} finally {
+					try {
+						if (bufferedWriter != null) {
+							bufferedWriter.close();
+						}
+						if (bufferedReader != null) {
+							bufferedReader.close();
+						}
+						if (socket != null) {
+							socket.close();
+						}
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+
+			}
+		}).start();
+	}
 }
